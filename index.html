@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Primary Meta Tags -->
+    <meta name="title" content="A2D2: Fine-Tuning Any-Length Discrete Diffusion for Adaptive Decoding - Tang, Zhu, Tao, Chatterjee">
+    <meta name="description"
+        content="A2D2 introduces a unified framework for reward-guided fine-tuning of any-length discrete diffusion models via joint optimization of insertion and unmasking policies with a quality-based inference schedule, evaluated on small-molecule design, therapeutic peptide generation, and language reasoning.">
+    <meta name="keywords"
+        content="discrete diffusion, masked diffusion models, any-length generation, fine-tuning, reward optimization, adaptive decoding, small molecule design, peptide design, language reasoning, sequence generation, machine learning">
+    <meta name="author" content="Sophia Tang, Yuchen Zhu, Molei Tao, Pranam Chatterjee">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Chatterjee Lab">
+    <meta property="og:title" content="A2D2: Fine-Tuning Any-Length Discrete Diffusion for Adaptive Decoding">
+    <meta property="og:description"
+        content="A2D2 introduces a unified framework for reward-guided fine-tuning of any-length discrete diffusion models via joint optimization of insertion and unmasking policies with a quality-based inference schedule.">
+    <meta property="og:url" content="https://sophtang.github.io/adaptive-anylength-discrete-diffusion">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="A2D2: Fine-Tuning Any-Length Discrete Diffusion for Adaptive Decoding">
+    <meta property="article:author" content="Sophia Tang">
+    <meta property="article:tag" content="discrete diffusion">
+    <meta property="article:tag" content="adaptive decoding">
+
+    <!-- Academic/Research Specific -->
+    <meta name="citation_title" content="A2D2: Fine-Tuning Any-Length Discrete Diffusion for Adaptive Decoding">
+    <meta name="citation_author" content="Tang, Sophia">
+    <meta name="citation_author" content="Zhu, Yuchen">
+    <meta name="citation_author" content="Tao, Molei">
+    <meta name="citation_author" content="Chatterjee, Pranam">
+    <meta name="citation_publication_date" content="2026">
+
+    <!-- Additional SEO -->
+    <meta name="theme-color" content="#6B67EE">
+    <meta name="msapplication-TileColor" content="#6B67EE">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://ajax.googleapis.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+
+    <title>A2D2: Fine-Tuning Any-Length Discrete Diffusion for Adaptive Decoding</title>
+
+    <!-- Favicon and App Icons -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+    <link rel="apple-touch-icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+
+    <!-- Critical CSS - Load synchronously -->
+    <link rel="stylesheet" href="static/css/bulma.min.css">
+    <link rel="stylesheet" href="static/css/index.css">
+
+    <!-- Non-critical CSS - Load asynchronously -->
+    <link rel="preload" href="static/css/bulma-carousel.min.css" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="static/css/bulma-slider.min.css" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="static/css/fontawesome.all.min.css" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+
+    <!-- Fallback for browsers that don't support preload -->
+    <noscript>
+        <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
+        <link rel="stylesheet" href="static/css/bulma-slider.min.css">
+        <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+    </noscript>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- KaTeX for math equations -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+
+    <!-- Defer non-critical JavaScript -->
+    <script defer src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script defer src="static/js/fontawesome.all.min.js"></script>
+    <script defer src="static/js/bulma-carousel.min.js"></script>
+    <script defer src="static/js/bulma-slider.min.js"></script>
+    <script defer src="static/js/index.js"></script>
+
+    <!-- Structured Data for Academic Papers -->
+    <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    "headline": "A2D2: Fine-Tuning Any-Length Discrete Diffusion for Adaptive Decoding",
+    "description": "A2D2 introduces a unified framework for reward-guided fine-tuning of any-length masked discrete diffusion models, jointly optimizing insertion and unmasking policies with quality-based adaptive inference, evaluated on small-molecule design, therapeutic peptide generation, and language reasoning.",
+    "author": [
+      {
+        "@type": "Person",
+        "name": "Sophia Tang",
+        "affiliation": { "@type": "Organization", "name": "University of Pennsylvania" }
+      },
+      {
+        "@type": "Person",
+        "name": "Yuchen Zhu",
+        "affiliation": { "@type": "Organization", "name": "Georgia Institute of Technology" }
+      },
+      {
+        "@type": "Person",
+        "name": "Molei Tao",
+        "affiliation": { "@type": "Organization", "name": "Georgia Institute of Technology" }
+      },
+      {
+        "@type": "Person",
+        "name": "Pranam Chatterjee",
+        "affiliation": { "@type": "Organization", "name": "University of Pennsylvania" }
+      }
+    ],
+    "url": "https://sophtang.github.io/a2d2",
+    "image": "https://sophtang.github.io/a2d2/static/images/a2d2.png",
+    "keywords": ["discrete diffusion", "masked diffusion models", "any-length generation", "fine-tuning", "reward optimization", "adaptive decoding", "small molecule design", "peptide design", "language reasoning"],
+    "isAccessibleForFree": true,
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+</head>
+
+<body>
+
+    <!-- Scroll Progress Bar -->
+    <div class="scroll-progress" id="scrollProg"></div>
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-to-top" onclick="scrollToTop()" title="Scroll to top" aria-label="Scroll to top">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <main id="main-content">
+
+        <!-- Hero / Title -->
+        <section class="hero">
+            <div class="hero-body">
+                <div class="container is-max-desktop">
+                    <div class="columns is-centered">
+                        <div class="column has-text-centered">
+                            <h1 class="title is-1 publication-title hero-fade hero-fade-1">A2D2: Fine-Tuning Any-Length Discrete Diffusion for Adaptive Decoding</h1>
+                            <div class="is-size-5 publication-authors hero-fade hero-fade-2">
+                                <span class="author-block">
+                                    <a href="https://sophtang.github.io/" target="_blank">Sophia
+                                        Tang</a><sup>1</sup>,</span>
+                                <span class="author-block">
+                                    <a href="https://yuchen-zhu-zyc.github.io/" target="_blank">Yuchen
+                                        Zhu</a><sup>2</sup>,</span>
+                                <span class="author-block">
+                                    <a href="https://mtao8.math.gatech.edu/" target="_blank">Molei
+                                        Tao</a><sup>2</sup>,</span>
+                                <span class="author-block">
+                                    <a href="https://www.chatterjeelab.com/" target="_blank">Pranam
+                                        Chatterjee</a><sup>1</sup>
+                                </span>
+                            </div>
+
+                            <div class="is-size-5 publication-authors hero-fade hero-fade-3">
+                                <span class="author-block"><sup>1</sup>University of Pennsylvania &nbsp;&nbsp;
+                                    <sup>2</sup>Georgia Institute of Technology &nbsp;&nbsp;
+                            </div>
+
+                            <div class="column has-text-centered hero-fade hero-fade-4">
+                                <div class="publication-links">
+                                    <!-- Paper PDF -->
+                                    <span class="link-block">
+                                        <a href="https://arxiv.org/pdf/2606.13565" target="_blank"
+                                            class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon"><i class="fas fa-file-pdf"></i></span>
+                                            <span>Paper</span>
+                                        </a>
+                                    </span>
+
+                                    <!-- GitHub -->
+                                    <span class="link-block">
+                                        <a href="https://github.com/sophtang/A2D2" target="_blank"
+                                            class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon"><i class="fab fa-github"></i></span>
+                                            <span>Code</span>
+                                        </a>
+                                    </span>
+
+                                    <!-- arXiv  -->
+                                    <span class="link-block">
+                                        <a href="https://arxiv.org/abs/2606.13565" target="_blank"
+                                            class="external-link button is-normal is-rounded is-dark">
+                                            <span class="icon"><i class="ai ai-arxiv"></i></span>
+                                            <span>arXiv</span>
+                                        </a>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Teaser Figure -->
+        <section class="hero teaser">
+            <div class="container is-max-desktop">
+                <div class="hero-body has-text-centered hero-fade hero-fade-5">
+                    <img src="static/images/a2d2.gif"
+                        alt="A2D2 framework overview showing adaptive joint decoding of any-length discrete diffusion"
+                        style="max-width: 100%; height: auto;">
+                    <h2 class="subtitle has-text-centered" style="margin-top: 1.5rem; font-size: 1.35rem; line-height: 1.4; letter-spacing: 0em;">
+                        <strong>A2D2</strong> introduces a unified framework for <em>reward-guided fine-tuning</em> of any-length
+                        masked discrete diffusion models. 🃏🔮 By jointly optimizing <em>insertion and unmasking policies</em>
+                        with learned <em>quality predictors</em>, A2D2 enables <strong>adaptive decoding</strong> that provably
+                        samples from an intractable reward-tilted distribution without requiring target samples.
+                    </h2>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Abstract -->
+        <section class="section hero is-light">
+            <div class="container is-max-desktop">
+                <div class="columns is-centered has-text-centered">
+                    <div class="column is-four-fifths reveal">
+                        <h2 class="title is-3">Abstract</h2>
+                        <div class="content has-text-justified">
+                            <p>
+                                <strong>Discrete diffusion models</strong> offer a simple and stable
+                                likelihood-based framework for sequence generation, recently extended to
+                                any-length settings via token insertion. Principled reward-guided fine-tuning
+                                for any-length discrete diffusion, however, remains largely unexplored.
+                            </p>
+                            <p>
+                                We introduce Fine-Tuning <strong>A</strong>ny-Length <strong>D</strong>iscrete
+                                <strong>D</strong>iffusion for <strong>A</strong>daptive Decoding
+                                (<strong>A2D2</strong>), a unified framework for reward-guided fine-tuning of
+                                any-length discrete diffusion models via joint optimization of the insertion and
+                                unmasking policies together with a quality-based inference schedule. We derive the
+                                Radon&ndash;Nikodym derivative for the joint insertion&ndash;unmasking path measures,
+                                enabling theoretically guaranteed convergence to the intractable reward-tilted
+                                sequence distribution without requiring target samples. Building on this, we establish
+                                unmasking and insertion quality as tractable approaches for minimizing decoding error
+                                and introduce the <strong>Adaptive Joint Decoding (AJD)</strong> loss, which provably
+                                yields the optimal path measure that generates the reward-tilted distribution.
+                                Empirically, A2D2 improves reward optimization while enhancing generation flexibility
+                                and accuracy over prior fixed-length fine-tuning and inference-time guidance methods.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Key Contributions -->
+        <section class="section">
+            <div class="container is-max-desktop">
+                <div class="columns is-centered">
+                    <div class="column is-full-width reveal">
+                        <h2 class="title is-3 has-text-centered">Key Contributions</h2>
+                        <div class="content has-text-justified">
+                            <ul>
+                                <li>We introduce <strong>A2D2</strong>, a unified framework for reward-guided
+                                    fine-tuning of any-length discrete diffusion models via joint optimization
+                                    of the insertion and unmasking policies and a quality-based inference schedule.</li>
+                                <li>We derive the <strong>Radon&ndash;Nikodym derivative</strong> for the joint
+                                    insertion and unmasking path measures, enabling theoretically-guaranteed convergence
+                                    to an intractable reward-tilted sequence distribution.</li>
+                                <li>We establish <strong>unmasking and insertion quality</strong> as tractable methods
+                                    of minimizing <strong>compounding parallelization error (CPE)</strong> and introduce
+                                    the <strong>Adaptive Joint Decoding (AJD)</strong> loss, which provably yields the
+                                    optimal path measure that minimizes error and generates the reward-tilted
+                                    distribution.</li>
+                                <li>We demonstrate that A2D2 simultaneously <strong>optimizes rewards</strong> while
+                                    enhancing generation flexibility and accuracy over prior fixed-length fine-tuning
+                                    and inference-time guidance approaches across <strong>drug-like small molecule
+                                    design</strong>, <strong>multi-objective therapeutic peptide generation</strong>,
+                                    and <strong>language reasoning</strong>.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Method Overview -->
+        <section class="section hero is-light">
+            <div class="container is-max-desktop">
+                <div class="columns is-centered" style="margin-top: 2rem;">
+                    <div class="column is-full-width">
+                        <h2 class="title is-3 has-text-centered reveal">Overview of Framework</h2>
+                        <div class="content has-text-justified">
+
+                            <h3 class="title is-4 reveal">🃏 Defining Unmasking and Insertion Quality 🔮</h3>
+                            <p>
+                                A key challenge in any-length discrete diffusion is that model performance is highly
+                                sensitive to the chosen insertion and unmasking trajectory. We formally define the
+                                quality of a step taken in the decoding process.
+                            </p>
+
+                            <h4 class="reveal"><strong>Unmasking Quality</strong></h4>
+                            <p class="reveal">
+                                We define the <strong>unmasking quality</strong> as the probability that the unmasked
+                                token is sampled from the unmasking posterior given the context from the rest of the
+                                sequence:
+                            </p>
+                            <div class="math-box reveal">
+                                $$\mu_\star^\ell(\boldsymbol{y}) := p(\boldsymbol{y}^{\ell} = \boldsymbol{x}_1^{s_t[\ell]} \mid \boldsymbol{y}) = f_\theta(\tilde{\boldsymbol{x}}_t, t)[\ell, \boldsymbol{x}_1^\ell]$$
+                            </div>
+                            <p class="reveal">
+                                We train a parameterized model $\mu_\phi : \mathcal{X} \to [0,1]$ to predict the
+                                unmasking quality by minimizing the <strong>Unmasking Quality Loss (UQL)</strong>:
+                            </p>
+                            <div class="math-box reveal">
+                                $$\mathcal{L}_{\text{UQL}}(\phi; \boldsymbol{x}_1) := \underset{t \sim \mathcal{U}(0,1)}{\mathbb{E}} \underset{\tilde{\boldsymbol{x}}_t, \boldsymbol{y}}{\mathbb{E}} \left[ \sum_{\ell \in \mathcal{M}} \text{BCE}\left(\boldsymbol{1}[\boldsymbol{y}^\ell = \boldsymbol{x}_1^{s_t[\ell]}], \mu_\phi^\ell(\boldsymbol{y})\right) \right]$$
+                            </div>
+                            <p class="reveal">
+                                During inference, the unmasking quality determines which tokens are inconsistent and
+                                should be <strong>re-masked</strong>. We prove that maximizing unmasking quality
+                                upper-bounds the probability of successful <strong>parallel unmasking</strong>, directly
+                                minimizing the <strong>compounding parallelization error (CPE)</strong> &mdash; the gap
+                                between sequential single-token unmasking and the factorized approximation made when
+                                unmasking many tokens at once.
+                            </p>
+
+                            <h4 class="reveal"><strong>Insertion Quality</strong></h4>
+                            <p class="reveal">
+                                The <strong>insertion quality</strong> is defined as the probability that an
+                                inserted mask token is likely to be decoded into a true token in the corresponding
+                                gap of the target sequence:
+                            </p>
+                            <div class="math-box reveal">
+                                $$\nu_\star^\ell(\boldsymbol{y}) := \sum_{i=s_t[\ell-1]}^{s_t[\ell]} p(\boldsymbol{y}^{\ell} = \boldsymbol{x}_1^{i} \mid \boldsymbol{y})$$
+                            </div>
+                            <p class="reveal">
+                                We train a parameterized model $\nu_\phi$ by minimizing the <strong>Insertion Quality Loss (IQL)</strong>:
+                            </p>
+                            <div class="math-box reveal">
+                                $$\mathcal{L}_{\text{IQL}}(\phi; \boldsymbol{x}_1) := \underset{t \sim \mathcal{U}(0,1)}{\mathbb{E}} \underset{\tilde{\boldsymbol{x}}_t, \boldsymbol{y}}{\mathbb{E}} \left[ \sum_{i \in \mathcal{I}} \text{BCE}\big(\nu_\star^i(\boldsymbol{y}), \nu_\phi^i(\boldsymbol{y})\big) \right]$$
+                            </div>
+                            <p class="reveal">
+                                Maximizing insertion quality provides an <strong>upper bound</strong> for the
+                                probability of reconstructing a clean sequence, justifying its use for adaptive
+                                removal of low-quality insertions.
+                            </p>
+
+                            <hr class="reveal" style="border:none; height:2px; background:linear-gradient(90deg, transparent, #6B67EE, transparent); opacity:.55; margin:2.75rem 0;">
+
+                            <h3 class="title is-4 reveal">🃏 Adaptive Joint Decoding Loss 🔮</h3>
+                            <p class="reveal">
+                                We define the <strong>optimal reward-tilted path measure</strong> for any-length MDMs
+                                as:
+                            </p>
+                            <div class="math-box reveal">
+                                $$\mathbb{P}^\star(\boldsymbol{X}_{0:1}) := \frac{1}{Z} \mathbb{P}^{\text{pre}}(\boldsymbol{X}_{0:1}) \exp\left(\frac{r(\boldsymbol{X}_1)}{\alpha}\right)$$
+                            </div>
+                            <p class="reveal">
+                                To optimize toward $\mathbb{P}^\star$, we derive the <strong>Radon&ndash;Nikodym
+                                derivative</strong> for the joint insertion&ndash;unmasking CTMC path measures.
+                                This yields our <strong>Adaptive Joint Decoding (AJD)</strong> loss:
+                            </p>
+                            <div class="math-box reveal">
+                                $$\mathcal{L}_{\text{AJD}}(\theta, \phi) := \underset{\boldsymbol{X}_{0:1} \sim \mathbb{P}^v}{\mathbb{E}} \left[ \frac{1}{Z} e^{W^v} \big[ \mathcal{L}_{\text{unmask}}(\theta) + \mathcal{L}_{\text{insert}}(\theta) + \lambda_{\text{quality}}\big( \mathcal{L}_{\text{UQL}}(\phi) + \mathcal{L}_{\text{IQL}}(\phi) \big) \big] \right]$$
+                            </div>
+                            <p class="reveal">
+                                where $W^v := \log \frac{\mathrm{d}\mathbb{P}^\star}{\mathrm{d}\mathbb{P}^v}$ is the
+                                log Radon&ndash;Nikodym derivative used to <strong>reweight</strong> trajectories
+                                sampled from an arbitrary path measure $\mathbb{P}^v$ toward the target, and the
+                                normalizing constant is approximated as $Z \approx \mathbb{E}_{\mathbb{P}^v}[e^{W^v}]$.
+                            </p>
+                            <p class="reveal">
+                                The AJD loss provably yields the optimal unmasking and insertion generators that
+                                <strong>minimize trajectory-induced error</strong> while generating the
+                                reward-tilted distribution. It jointly optimizes:
+                            </p>
+                            <ul>
+                                <li>The <strong>unmasking policy</strong> $f_\theta$ and <strong>insertion policy</strong> $g_\theta$</li>
+                                <li>The <strong>unmasking quality predictor</strong> $\mu_\phi$ and <strong>insertion quality predictor</strong> $\nu_\phi$</li>
+                            </ul>
+
+                            <hr class="reveal" style="border:none; height:2px; background:linear-gradient(90deg, transparent, #6B67EE, transparent); opacity:.55; margin:2.75rem 0;">
+
+                            <h3 class="title is-4 reveal">🃏 Off-Policy RL &amp; Alternating Optimization 🔮</h3>
+                            <p class="reveal">
+                                We optimize the AJD loss with an <strong>off-policy RL</strong> strategy. Each iteration
+                                samples a batch of sequences $\boldsymbol{x}_1$ from the detached path measure
+                                $\mathbb{P}^{\bar\theta, \bar\phi}$, computes their log RND $W^{\bar\theta,\bar\phi}$, and
+                                stores them in a <strong>replay buffer</strong>; intermediate states are then drawn from
+                                the interpolant to evaluate the AJD loss. Because the policy parameters $\theta$ vastly
+                                outnumber the quality-head parameters $\phi$, we <strong>alternate</strong> between
+                                updating $\theta$ (with $\phi$ frozen) and $\phi$ (with $\theta$ frozen). This schedule
+                                also acts as implicit loss balancing, so the weighting $\lambda_{\text{quality}}$ never
+                                needs tuning.
+                            </p>
+
+                            <hr class="reveal" style="border:none; height:2px; background:linear-gradient(90deg, transparent, #6B67EE, transparent); opacity:.55; margin:2.75rem 0;">
+
+                            <h3 class="title is-4 reveal">🃏 Adaptive Inference 🔮</h3>
+                            <p class="reveal">
+                                Starting from an empty sequence, at each discrete time step $[t_k, t_{k+1}]$ A2D2 performs:
+                            </p>
+                            <ol>
+                                <li><strong>Adaptive Unmasking:</strong> Sample tokens to unmask via $f_\theta$,
+                                    predict unmasking quality via $\mu_\phi$, and <em>re-mask low-quality tokens</em>
+                                    that fall below a threshold (or until the expected number of masked tokens is reached).</li>
+                                <li><strong>Adaptive Insertion:</strong> Insert masks by sampling counts
+                                    $I^\ell_t \sim \text{Poisson}(g_\theta(\boldsymbol{x}_t,t)[\ell]\cdot\Delta t)$ per gap,
+                                    predict insertion quality via $\nu_\phi$, and <em>remove low-quality insertions</em>.</li>
+                            </ol>
+                            <p>
+                                Generation stops when no masks remain and the insertion expectation falls below
+                                $0.5$, or when the total number of time steps is reached.
+                            </p>
+
+                            <div class="reveal" style="margin-top:2rem;">
+                                <iframe src="hero-card-dealer.html"
+                                        title="A2D2 Adaptive Joint Decoding animation"
+                                        loading="lazy" scrolling="no"
+                                        style="width:100%; height:420px; border:none; background:transparent; display:block;"></iframe>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Experiments -->
+        <section class="section">
+            <div class="container is-max-desktop">
+                <div class="columns is-centered">
+                    <div class="column is-full-width">
+
+                        <h2 class="title is-3 has-text-centered reveal">Experiments</h2>
+                        <div class="content has-text-justified reveal">
+                            <p>
+                                We evaluate <strong>A2D2</strong> on three reward-guided sequence generation tasks
+                                where any-order, any-length discrete diffusion is particularly well-suited:
+                                <strong>drug-like small molecule design</strong>, <strong>multi-objective therapeutic
+                                peptide generation</strong>, and <strong>language reasoning</strong> for math word
+                                problems and code infilling.
+                            </p>
+                        </div>
+
+                        <!-- Small Molecule Design -->
+                        <h3 class="title is-4 reveal">Drug-Like Small Molecule Design 🧪</h3>
+                        <div class="content has-text-justified reveal">
+                            <p>
+                                We pre-train an any-length MDM on the <strong>SAFE</strong> dataset
+                                (~950M molecules from ZINC and Unichem in SAFE notation, $V=1880$) and fine-tune with
+                                A2D2 using <em>QED</em> and <em>synthetic accessibility (SA)</em> as rewards. We report
+                                <strong>quality</strong> (fraction of valid, unique, drug-like, and synthesizable
+                                molecules), <strong>validity</strong>, <strong>uniqueness</strong>, and
+                                <strong>diversity</strong>, and benchmark against <strong>GenMol</strong>, the
+                                state-of-the-art <em>fixed-length</em> masked diffusion model for SAFE generation,
+                                along with ablations that remove the insertion and/or unmasking quality predictors.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Table 1: Molecule -->
+        <section class="section" style="padding-top: 0; padding-bottom: 3rem; border-top: none;">
+            <div class="container reveal" style="max-width: 1200px;">
+                <div style="
+                    background: var(--background-secondary);
+                    border: 1.5px solid var(--border-color);
+                    border-radius: var(--border-radius-lg);
+                    padding: 1.5rem;
+                    box-shadow: var(--shadow-md);
+                    overflow-x: auto;
+                ">
+                    <p style="font-size: 0.82rem; margin-bottom: 1rem; color: var(--text-secondary); font-family: 'Lora', serif;">
+                        <strong>Table 1: Drug-like small molecule design results.</strong> Metrics are computed over 1000 generated molecules, with mean and standard deviation across 3 seeds. <strong>Highlighted</strong> rows use the any-length model; the <strong>A2D2</strong> fine-tuned variants are shown in <strong>dark blue</strong> (the <em>A2D2 (w/ both quality)</em> row is the full model with both quality predictors).
+                    </p>
+                    <table class="table is-bordered is-hoverable is-fullwidth" style="
+                        font-size: 0.82rem;
+                        text-align: center;
+                        font-family: 'Lora', serif;
+                        background: white;
+                        margin-bottom: 0;
+                    ">
+                        <thead>
+                            <tr style="background: var(--gradient-primary);">
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Method</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Validity (% total)</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Uniqueness (% valid)</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Quality (% total)</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">QED (&uarr;)</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">SA (&darr;)</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Diversity (&uarr;)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>GenMol w/o confidence</td>
+                                <td>98.467 <small>&plusmn;0.094</small></td>
+                                <td>99.763 <small>&plusmn;0.048</small></td>
+                                <td>73.667 <small>&plusmn;1.159</small></td>
+                                <td>0.763 <small>&plusmn;0.002</small></td>
+                                <td>3.024 <small>&plusmn;0.017</small></td>
+                                <td>0.859 <small>&plusmn;0.000</small></td>
+                            </tr>
+                            <tr>
+                                <td>GenMol w/ confidence</td>
+                                <td>99.733 <small>&plusmn;0.047</small></td>
+                                <td>99.532 <small>&plusmn;0.125</small></td>
+                                <td>84.000 <small>&plusmn;0.566</small></td>
+                                <td>0.813 <small>&plusmn;0.004</small></td>
+                                <td>2.881 <small>&plusmn;0.020</small></td>
+                                <td>0.817 <small>&plusmn;0.000</small></td>
+                            </tr>
+                            <tr style="background-color: rgba(107, 103, 238, 0.13);">
+                                <td>Pre-trained (Any Length)</td>
+                                <td>95.800 <small>&plusmn;0.294</small></td>
+                                <td>99.582 <small>&plusmn;0.086</small></td>
+                                <td>44.167 <small>&plusmn;0.574</small></td>
+                                <td>0.641 <small>&plusmn;0.002</small></td>
+                                <td>3.401 <small>&plusmn;0.032</small></td>
+                                <td>0.908 <small>&plusmn;0.000</small></td>
+                            </tr>
+                            <tr class="a2d2-row">
+                                <td>A2D2 w/o quality</td>
+                                <td>96.400 <small>&plusmn;0.535</small></td>
+                                <td>62.484 <small>&plusmn;0.452</small></td>
+                                <td>76.067 <small>&plusmn;0.896</small></td>
+                                <td>0.795 <small>&plusmn;0.005</small></td>
+                                <td>2.306 <small>&plusmn;0.024</small></td>
+                                <td>0.730 <small>&plusmn;0.003</small></td>
+                            </tr>
+                            <tr class="a2d2-row">
+                                <td>A2D2 w/o insertion quality</td>
+                                <td>92.200 <small>&plusmn;0.082</small></td>
+                                <td>93.746 <small>&plusmn;0.335</small></td>
+                                <td>71.067 <small>&plusmn;0.411</small></td>
+                                <td>0.752 <small>&plusmn;0.003</small></td>
+                                <td>2.654 <small>&plusmn;0.014</small></td>
+                                <td>0.832 <small>&plusmn;0.001</small></td>
+                            </tr>
+                            <tr class="a2d2-row">
+                                <td>A2D2 w/o unmasking quality</td>
+                                <td>98.600 <small>&plusmn;0.082</small></td>
+                                <td>85.801 <small>&plusmn;0.387</small></td>
+                                <td>82.367 <small>&plusmn;0.736</small></td>
+                                <td>0.818 <small>&plusmn;0.003</small></td>
+                                <td>2.753 <small>&plusmn;0.026</small></td>
+                                <td>0.789 <small>&plusmn;0.002</small></td>
+                            </tr>
+                            <tr class="a2d2-row">
+                                <td>A2D2 (w/ both quality)</td>
+                                <td>94.533 <small>&plusmn;0.665</small></td>
+                                <td>93.695 <small>&plusmn;0.925</small></td>
+                                <td>71.300 <small>&plusmn;0.852</small></td>
+                                <td>0.762 <small>&plusmn;0.004</small></td>
+                                <td>2.870 <small>&plusmn;0.018</small></td>
+                                <td>0.843 <small>&plusmn;0.001</small></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div><!-- /inner card -->
+            </div><!-- /container -->
+        </section>
+
+        <!-- Peptide Design -->
+        <section class="section">
+            <div class="container is-max-desktop">
+                <div class="columns is-centered">
+                    <div class="column is-full-width">
+
+                        <h3 class="title is-4 reveal">Multi-Objective Therapeutic Peptide Generation 💉</h3>
+                        <div class="content has-text-justified reveal">
+                            <p>
+                                We pre-train an any-length MDM on <strong>11 million peptide SMILES</strong>
+                                (CycPeptMPDB, SmProt, and CycloPs) and fine-tune with A2D2 on five therapeutic
+                                properties: <em>binding affinity</em> to a target protein, <em>solubility</em>,
+                                <em>non-hemolysis</em>, <em>non-fouling</em>, and <em>membrane permeability</em>.
+                                As no prior work addresses guidance or fine-tuning for any-length discrete diffusion,
+                                we compare against fixed-length baselines: <strong>Multi-Objective Guidance
+                                (PepTune)</strong>, inference-time guidance via Monte Carlo Tree Guidance, and
+                                <strong>Off-Policy RL (TR2-D2)</strong>, fixed-length RL fine-tuning.
+                            </p>
+                        </div>
+                        <div class="has-text-centered reveal">
+                            <img src="static/images/fig2.png"
+                                alt="Multi-objective peptide fine-tuning curves with and without quality-based adaptive inference"
+                                style="max-width: 100%; height: auto;" loading="lazy">
+                        </div>
+                        <br>
+                        <div class="content has-text-justified reveal">
+                            <p>
+                                Fine-tuning any-length MDMs with the AJD weighted loss yields <strong>substantial
+                                reward gains across all objectives</strong>, with or without quality-based adaptive
+                                inference. At equal sampling steps, <strong>A2D2</strong> outperforms the any-length
+                                pre-trained baseline by a wide margin on every property and surpasses both the
+                                fixed-length RL fine-tuning and the substantially more expensive guidance baselines on
+                                almost all objectives &mdash; for example, raising TfR binding affinity from
+                                <strong>7.756 to 10.190</strong> &mdash; all without inference-time search. Crucially,
+                                quality-based adaptive inference markedly improves sequence validity while optimizing
+                                the <em>same</em> rewards: A2D2 reaches <strong>48.6% validity on TfR</strong>, nearly
+                                a fivefold improvement over the any-length pre-trained model.
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Table 2: Peptide -->
+        <section class="section" style="padding-top: 0; padding-bottom: 3rem; border-top: none;">
+            <div class="container reveal" style="max-width: 1200px;">
+                <div style="
+                    background: var(--background-secondary);
+                    border: 1.5px solid var(--border-color);
+                    border-radius: var(--border-radius-lg);
+                    padding: 1.5rem;
+                    box-shadow: var(--shadow-md);
+                    overflow-x: auto;
+                ">
+                    <p style="font-size: 0.82rem; margin-bottom: 1rem; color: var(--text-secondary); font-family: 'Lora', serif;">
+                        <strong>Table 2: Multi-objective peptide design results.</strong> Metrics are computed over 1000 generated peptides (100 Pareto-optimal sequences for multi-objective guidance), with mean and standard deviation across 3 seeds. <strong>Highlighted</strong> rows are A2D2 variations (the <em>A2D2 (w/ both quality)</em> row is the full model). *Only valid sequences are added to the optimal set for guidance.
+                    </p>
+                    <table class="table is-bordered is-hoverable is-fullwidth" style="
+                        font-size: 0.82rem;
+                        text-align: center;
+                        font-family: 'Lora', serif;
+                        background: white;
+                        margin-bottom: 0;
+                    ">
+                        <thead>
+                            <tr style="background: var(--gradient-primary);">
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Target</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Method</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Validity (%)</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Binding Affinity (&uarr;)</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Solubility (&uarr;)</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Non-hemolysis (&uarr;)</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Non-fouling (&uarr;)</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Permeability (&uarr;)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- TfR -->
+                            <tr>
+                                <td rowspan="6"><strong>TfR</strong></td>
+                                <td>Pre-trained (Fixed)</td>
+                                <td>32.446 <small>&plusmn;0.662</small></td>
+                                <td>8.776 <small>&plusmn;0.023</small></td>
+                                <td>0.707 <small>&plusmn;0.001</small></td>
+                                <td>0.901 <small>&plusmn;0.003</small></td>
+                                <td>0.215 <small>&plusmn;0.001</small></td>
+                                <td>-7.145 <small>&plusmn;0.003</small></td>
+                            </tr>
+                            <tr>
+                                <td>Pre-trained (Any)</td>
+                                <td>10.064 <small>&plusmn;0.360</small></td>
+                                <td>7.756 <small>&plusmn;0.015</small></td>
+                                <td>0.689 <small>&plusmn;0.010</small></td>
+                                <td>0.851 <small>&plusmn;0.001</small></td>
+                                <td>0.169 <small>&plusmn;0.004</small></td>
+                                <td>-7.185 <small>&plusmn;0.009</small></td>
+                            </tr>
+                            <tr>
+                                <td>Multi-Objective Guidance (Fixed)</td>
+                                <td>N/A*</td>
+                                <td>9.043 <small>&plusmn;0.168</small></td>
+                                <td>0.717 <small>&plusmn;0.004</small></td>
+                                <td>0.897 <small>&plusmn;0.009</small></td>
+                                <td>0.206 <small>&plusmn;0.001</small></td>
+                                <td>-7.126 <small>&plusmn;0.004</small></td>
+                            </tr>
+                            <tr>
+                                <td>Off-Policy RL (Fixed)</td>
+                                <td>33.433 <small>&plusmn;1.190</small></td>
+                                <td>10.614 <small>&plusmn;0.011</small></td>
+                                <td>0.655 <small>&plusmn;0.004</small></td>
+                                <td>0.810 <small>&plusmn;0.002</small></td>
+                                <td>0.224 <small>&plusmn;0.002</small></td>
+                                <td>-7.109 <small>&plusmn;0.005</small></td>
+                            </tr>
+                            <tr class="a2d2-row">
+                                <td>A2D2 w/o quality</td>
+                                <td>41.267 <small>&plusmn;1.520</small></td>
+                                <td>10.241 <small>&plusmn;0.012</small></td>
+                                <td>0.792 <small>&plusmn;0.011</small></td>
+                                <td>0.831 <small>&plusmn;0.004</small></td>
+                                <td>0.096 <small>&plusmn;0.001</small></td>
+                                <td>-6.102 <small>&plusmn;0.006</small></td>
+                            </tr>
+                            <tr class="a2d2-row">
+                                <td>A2D2 (w/ both quality)</td>
+                                <td>48.600 <small>&plusmn;1.445</small></td>
+                                <td>10.190 <small>&plusmn;0.033</small></td>
+                                <td>0.776 <small>&plusmn;0.003</small></td>
+                                <td>0.831 <small>&plusmn;0.003</small></td>
+                                <td>0.118 <small>&plusmn;0.002</small></td>
+                                <td>-6.338 <small>&plusmn;0.003</small></td>
+                            </tr>
+                            <!-- GLP-1R -->
+                            <tr>
+                                <td rowspan="6"><strong>GLP-1R</strong></td>
+                                <td>Pre-trained (Fixed)</td>
+                                <td>32.446 <small>&plusmn;0.662</small></td>
+                                <td>8.781 <small>&plusmn;0.018</small></td>
+                                <td>0.707 <small>&plusmn;0.001</small></td>
+                                <td>0.901 <small>&plusmn;0.003</small></td>
+                                <td>0.215 <small>&plusmn;0.001</small></td>
+                                <td>-7.145 <small>&plusmn;0.003</small></td>
+                            </tr>
+                            <tr>
+                                <td>Pre-trained (Any)</td>
+                                <td>10.064 <small>&plusmn;0.360</small></td>
+                                <td>8.008 <small>&plusmn;0.019</small></td>
+                                <td>0.689 <small>&plusmn;0.010</small></td>
+                                <td>0.851 <small>&plusmn;0.001</small></td>
+                                <td>0.169 <small>&plusmn;0.004</small></td>
+                                <td>-7.185 <small>&plusmn;0.009</small></td>
+                            </tr>
+                            <tr>
+                                <td>Multi-Objective Guidance (Fixed)</td>
+                                <td>N/A*</td>
+                                <td>8.897 <small>&plusmn;0.041</small></td>
+                                <td>0.721 <small>&plusmn;0.010</small></td>
+                                <td>0.896 <small>&plusmn;0.015</small></td>
+                                <td>0.214 <small>&plusmn;0.014</small></td>
+                                <td>-7.111 <small>&plusmn;0.025</small></td>
+                            </tr>
+                            <tr>
+                                <td>Off-Policy RL (Fixed)</td>
+                                <td>48.767 <small>&plusmn;0.492</small></td>
+                                <td>9.377 <small>&plusmn;0.025</small></td>
+                                <td>0.684 <small>&plusmn;0.003</small></td>
+                                <td>0.804 <small>&plusmn;0.010</small></td>
+                                <td>0.247 <small>&plusmn;0.002</small></td>
+                                <td>-7.019 <small>&plusmn;0.009</small></td>
+                            </tr>
+                            <tr class="a2d2-row">
+                                <td>A2D2 w/o quality</td>
+                                <td>25.033 <small>&plusmn;2.014</small></td>
+                                <td>9.698 <small>&plusmn;0.003</small></td>
+                                <td>0.830 <small>&plusmn;0.003</small></td>
+                                <td>0.849 <small>&plusmn;0.004</small></td>
+                                <td>0.618 <small>&plusmn;0.006</small></td>
+                                <td>-7.272 <small>&plusmn;0.003</small></td>
+                            </tr>
+                            <tr class="a2d2-row">
+                                <td>A2D2 (w/ both quality)</td>
+                                <td>29.167 <small>&plusmn;1.634</small></td>
+                                <td>9.520 <small>&plusmn;0.017</small></td>
+                                <td>0.854 <small>&plusmn;0.002</small></td>
+                                <td>0.840 <small>&plusmn;0.002</small></td>
+                                <td>0.601 <small>&plusmn;0.007</small></td>
+                                <td>-7.209 <small>&plusmn;0.008</small></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div><!-- /inner card -->
+            </div><!-- /container -->
+        </section>
+
+        <!-- Language Reasoning -->
+        <section class="section">
+            <div class="container is-max-desktop">
+                <div class="columns is-centered">
+                    <div class="column is-full-width">
+
+                        <h3 class="title is-4 reveal">Language Reasoning 🧠</h3>
+                        <div class="content has-text-justified reveal">
+                            <p>
+                                We adapt the 8B-parameter <strong>LLaDA-8B-Base</strong> fixed-length MDM into an
+                                any-length MDM by adding time-embedding layers and an insertion head and training LoRA
+                                adapters on OpenWebText and Proof-Pile-2. After instruction fine-tuning for math word
+                                problems (<strong>GSM8K</strong>) and code infilling (<strong>HumanEval-infill</strong>),
+                                we apply A2D2 RL fine-tuning and compare against the <strong>Pre-trained + IFT</strong>
+                                baseline across matched inference budgets.
+                            </p>
+                        </div>
+                        <div class="content has-text-justified reveal">
+                            <p>
+                                Across both reasoning tasks, A2D2 yields large gains at every inference budget. On
+                                GSM8K, it raises Pass@1 from <strong>35.71% to 60.96%</strong> at 128 sampling steps
+                                (a 25.3-point improvement) and exceeds the baseline's strongest result (41.39% at 1024
+                                steps) by ~20 points while using a fraction of the steps &mdash; concentrating accuracy
+                                in the <em>low-sampling-step regime</em>. On HumanEval infilling, A2D2 improves exact
+                                match from <strong>44.14% to 49.37%</strong> at 128 steps and from 48.89% to
+                                <strong>57.12%</strong> at 1024 steps, with performance increasing monotonically in the
+                                number of steps. This mirrors the gains observed in the molecule and peptide settings,
+                                demonstrating that A2D2 simultaneously improves accuracy and decoding efficiency.
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Table 3: Language -->
+        <section class="section" style="padding-top: 0; padding-bottom: 3rem; border-top: none;">
+            <div class="container reveal" style="max-width: 720px;">
+                <div style="
+                    background: var(--background-secondary);
+                    border: 1.5px solid var(--border-color);
+                    border-radius: var(--border-radius-lg);
+                    padding: 1.5rem;
+                    box-shadow: var(--shadow-md);
+                    overflow-x: auto;
+                ">
+                    <p style="font-size: 0.82rem; margin-bottom: 1rem; color: var(--text-secondary); font-family: 'Lora', serif;">
+                        <strong>Table 3: Reasoning results.</strong> GSM8K is evaluated with Pass@1 (%) over 1319 questions; code infilling with exact match (%) over 1033 examples. <strong>Highlighted</strong> rows are A2D2.
+                    </p>
+                    <table class="table is-bordered is-hoverable is-fullwidth" style="
+                        font-size: 0.82rem;
+                        text-align: center;
+                        font-family: 'Lora', serif;
+                        background: white;
+                        margin-bottom: 0;
+                    ">
+                        <thead>
+                            <tr style="background: var(--gradient-primary);">
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Benchmark</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">Method</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">128</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">256</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">512</th>
+                                <th style="color: white; border-color: #5a56cc; padding: 0.65rem 0.75rem; white-space: nowrap;">1024</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td rowspan="2"><strong>GSM8K</strong><br><small>(Pass@1)</small></td>
+                                <td>Pre-trained + IFT</td>
+                                <td>35.71</td>
+                                <td>37.98</td>
+                                <td>39.88</td>
+                                <td>41.39</td>
+                            </tr>
+                            <tr class="a2d2-row">
+                                <td>A2D2</td>
+                                <td>60.96</td>
+                                <td>61.03</td>
+                                <td>57.54</td>
+                                <td>57.62</td>
+                            </tr>
+                            <tr>
+                                <td rowspan="2"><strong>HumanEval</strong><br><small>(infill EM)</small></td>
+                                <td>Pre-trained + IFT</td>
+                                <td>44.14</td>
+                                <td>44.82</td>
+                                <td>47.53</td>
+                                <td>48.89</td>
+                            </tr>
+                            <tr class="a2d2-row">
+                                <td>A2D2</td>
+                                <td>49.37</td>
+                                <td>53.44</td>
+                                <td>53.73</td>
+                                <td>57.12</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div><!-- /inner card -->
+            </div><!-- /container -->
+        </section>
+
+
+        <!-- BibTeX -->
+        <section class="section" id="BibTeX">
+            <div class="container is-max-desktop content">
+                <div class="bibtex-header">
+                    <h2 class="title">BibTeX</h2>
+                    <button class="copy-bibtex-btn" onclick="copyBibTeX()" title="Copy BibTeX to clipboard">
+                        <i class="fas fa-copy"></i>
+                        <span class="copy-text">Copy</span>
+                    </button>
+                </div>
+                <pre id="bibtex-code"><code>@article{tang2026a2d2,
+  title={A2D2: Fine-Tuning Any-Length Discrete Diffusion for Adaptive Decoding},
+  author={Sophia Tang and Yuchen Zhu and Molei Tao and Pranam Chatterjee},
+  journal={arXiv preprint arXiv:2606.13565},
+  year={2026}
+}</code></pre>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-8">
+                    <div class="content">
+                        <p class="has-text-centered">
+                            A2D2 &nbsp;&middot;&nbsp; University of Pennsylvania &amp; Georgia Institute of Technology &nbsp;&middot;&nbsp; <a href="https://arxiv.org/abs/2606.13565" target="_blank">arXiv:2606.13565</a> &nbsp;&middot;&nbsp; Template from <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Scroll-triggered reveal animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+        document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+
+        // Scroll progress bar
+        const prog = document.getElementById('scrollProg');
+        window.addEventListener('scroll', () => {
+            const h = document.documentElement;
+            const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+            prog.style.width = pct + '%';
+        }, { passive: true });
+    });
+    </script>
+
+</body>
+
+</html>
